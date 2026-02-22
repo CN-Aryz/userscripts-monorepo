@@ -2,8 +2,10 @@ node_modules/
 .turbo/
 
 # Build outputs
-**/dist/
 dist/
+**/dist/
+!scripts/*/dist/
+!scripts/*/dist/**
 
 # TypeScript incremental
 *.tsbuildinfo
