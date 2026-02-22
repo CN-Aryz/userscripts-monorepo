@@ -1,6 +1,6 @@
 import type { UserscriptMeta } from "@us/tools";
 
-const repo = "https://github.com/Aryz/userscripts-monorepo";
+const repo = "https://github.com/CN-Aryz/userscripts-monorepo";
 const scriptPath = "scripts/bili-quickcopy/dist/bili-quickcopy.user.js";
 const rawBase = `${repo}/raw/main/${scriptPath}`;
 
@@ -12,14 +12,11 @@ export const meta: UserscriptMeta = {
   author: "Aryz",
   homepageURL: repo,
   supportURL: `${repo}/issues`,
-  match: [
-    "https://www.bilibili.com/video/BV*",
-    "https://live.bilibili.com/*"
-  ],
+  match: ["https://www.bilibili.com/video/BV*", "https://live.bilibili.com/*"],
   icon: "https://www.bilibili.com/favicon.ico",
   license: "MIT",
   runAt: "document-idle",
   updateURL: rawBase,
   downloadURL: rawBase,
-  grant: ["none"]
+  grant: ["none"],
 };

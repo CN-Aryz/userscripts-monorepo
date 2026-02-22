@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name B站VRChat链接复制（下拉选项版）
-// @namespace https://github.com/Aryz/userscripts-monorepo
+// @namespace https://github.com/CN-Aryz/userscripts-monorepo
 // @version 1.0.0
 // @description B站VRChat链接复制（下拉选项版）
 // @author Aryz
@@ -9,11 +9,11 @@
 // @icon https://www.bilibili.com/favicon.ico
 // @license MIT
 // @run-at document-idle
-// @updateURL https://github.com/Aryz/userscripts-monorepo/raw/main/scripts/bili-quickcopy/dist/bili-quickcopy.user.js
-// @downloadURL https://github.com/Aryz/userscripts-monorepo/raw/main/scripts/bili-quickcopy/dist/bili-quickcopy.user.js
+// @updateURL https://github.com/CN-Aryz/userscripts-monorepo/raw/main/scripts/bili-quickcopy/dist/bili-quickcopy.user.js
+// @downloadURL https://github.com/CN-Aryz/userscripts-monorepo/raw/main/scripts/bili-quickcopy/dist/bili-quickcopy.user.js
 // @grant none
-// @homepageURL https://github.com/Aryz/userscripts-monorepo
-// @supportURL https://github.com/Aryz/userscripts-monorepo/issues
+// @homepageURL https://github.com/CN-Aryz/userscripts-monorepo
+// @supportURL https://github.com/CN-Aryz/userscripts-monorepo/issues
 // ==/UserScript==
 
 (function() {
@@ -22,7 +22,7 @@
     { label: "直接复制当前连接", isDirectLink: true, prefix: "" },
     { label: "纯K", prefix: "http://ckapi.sevenbrothers.cn/bili/api?id=" },
     { label: "api xin", prefix: "http://api.xin.moe/" },
-    { label: "备用链接", prefix: "http://anotherprefix.com/link?id=" }
+    { label: "Aryz", prefix: "https://vrc.aryz.dpdns.org/" }
   ];
   function getQueryString(name) {
     const reg = new RegExp(`(^|&)${name}=([^&]*)(&|$)`, "i");
