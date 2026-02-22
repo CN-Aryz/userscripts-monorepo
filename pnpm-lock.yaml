@@ -33,6 +33,9 @@ importers:
 
   scripts/bili-quickcopy:
     devDependencies:
+      '@us/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@us/tools':
         specifier: workspace:*
         version: link:../../packages/tools

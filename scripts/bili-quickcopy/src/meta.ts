@@ -18,5 +18,5 @@ export const meta: UserscriptMeta = {
   runAt: "document-idle",
   updateURL: rawBase,
   downloadURL: rawBase,
-  grant: ["none"],
+  grant: ["GM_setClipboard"],
 };

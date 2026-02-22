@@ -1,3 +1,4 @@
+import { copyText } from "@us/shared";
 type PrefixOption = {
   label: string;
   prefix: string;
@@ -116,8 +117,7 @@ function mount() {
           ? `${window.location.origin}${window.location.pathname}`
           : `${option.prefix}${getUrlParameter()}`;
 
-        navigator.clipboard
-          .writeText(link)
+        copyText(link)
           .then(() => {
             updateMainButtonText(mainButton, "复制成功");
           })

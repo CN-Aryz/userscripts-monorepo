@@ -11,13 +11,27 @@
 // @run-at document-idle
 // @updateURL https://github.com/CN-Aryz/userscripts-monorepo/raw/main/scripts/bili-quickcopy/dist/bili-quickcopy.user.js
 // @downloadURL https://github.com/CN-Aryz/userscripts-monorepo/raw/main/scripts/bili-quickcopy/dist/bili-quickcopy.user.js
-// @grant none
+// @grant GM_setClipboard
 // @homepageURL https://github.com/CN-Aryz/userscripts-monorepo
 // @supportURL https://github.com/CN-Aryz/userscripts-monorepo/issues
 // ==/UserScript==
 
 (function() {
   "use strict";
+  async function r(t) {
+    if (typeof GM_setClipboard == "function")
+      return GM_setClipboard(t, "text"), true;
+    try {
+      return await navigator.clipboard.writeText(t), true;
+    } catch {
+    }
+    try {
+      const e = document.createElement("textarea");
+      return e.value = t, e.style.position = "fixed", e.style.left = "-9999px", document.body.appendChild(e), e.select(), document.execCommand("copy"), e.remove(), true;
+    } catch {
+      return false;
+    }
+  }
   const prefixes = [
     { label: "直接复制当前连接", isDirectLink: true, prefix: "" },
     { label: "纯K", prefix: "http://ckapi.sevenbrothers.cn/bili/api?id=" },
@@ -111,7 +125,7 @@
         });
         item.addEventListener("click", () => {
           const link = option.isDirectLink ? `${window.location.origin}${window.location.pathname}` : `${option.prefix}${getUrlParameter()}`;
-          navigator.clipboard.writeText(link).then(() => {
+          r(link).then(() => {
             updateMainButtonText(mainButton, "复制成功");
           }).catch(() => {
             updateMainButtonText(mainButton, "复制失败");
