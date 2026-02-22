@@ -7,7 +7,7 @@ const rawBase = `${repo}/raw/main/${scriptPath}`;
 export const meta: UserscriptMeta = {
   name: "B站VRChat链接复制（下拉选项版）",
   namespace: repo,
-  version: "1.0.0",
+  version: "1.0.1",
   description: "B站VRChat链接复制（下拉选项版）",
   author: "Aryz",
   homepageURL: repo,

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name B站VRChat链接复制（下拉选项版）
 // @namespace https://github.com/CN-Aryz/userscripts-monorepo
-// @version 1.0.0
+// @version 1.0.1
 // @description B站VRChat链接复制（下拉选项版）
 // @author Aryz
 // @match https://www.bilibili.com/video/BV*
