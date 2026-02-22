@@ -1,0 +1,9 @@
+node_modules/
+.turbo/
+
+# Build outputs
+**/dist/
+dist/
+
+# TypeScript incremental
+*.tsbuildinfo
