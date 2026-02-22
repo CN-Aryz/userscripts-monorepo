@@ -18,16 +18,26 @@
 
 (function() {
   "use strict";
-  async function r(t) {
-    if (typeof GM_setClipboard == "function")
-      return GM_setClipboard(t, "text"), true;
+  async function copyText(text) {
+    if (typeof GM_setClipboard === "function") {
+      GM_setClipboard(text, "text");
+      return true;
+    }
     try {
-      return await navigator.clipboard.writeText(t), true;
+      await navigator.clipboard.writeText(text);
+      return true;
     } catch {
     }
     try {
-      const e = document.createElement("textarea");
-      return e.value = t, e.style.position = "fixed", e.style.left = "-9999px", document.body.appendChild(e), e.select(), document.execCommand("copy"), e.remove(), true;
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      return true;
     } catch {
       return false;
     }
@@ -125,7 +135,7 @@
         });
         item.addEventListener("click", () => {
           const link = option.isDirectLink ? `${window.location.origin}${window.location.pathname}` : `${option.prefix}${getUrlParameter()}`;
-          r(link).then(() => {
+          copyText(link).then(() => {
             updateMainButtonText(mainButton, "复制成功");
           }).catch(() => {
             updateMainButtonText(mainButton, "复制失败");

@@ -6,6 +6,7 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     sourcemap: true,
+    minify: false,
     lib: {
       entry: fileURLToPath(new URL("./src/index.ts", import.meta.url)),
       formats: ["es"],
