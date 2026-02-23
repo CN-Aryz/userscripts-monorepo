@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name 抖音播放链接快速复制
 // @namespace https://github.com/CN-Aryz/userscripts-monorepo
-// @version 1.0.3
+// @version 1.0.4
 // @description 在抖音视频页快速复制当前视频的播放链接（优先 MP4/H264）
 // @author Aryz
 // @match https://www.douyin.com/*
