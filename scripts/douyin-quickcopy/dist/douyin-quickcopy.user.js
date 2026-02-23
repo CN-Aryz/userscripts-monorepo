@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name 抖音播放链接快速复制
 // @namespace https://github.com/CN-Aryz/userscripts-monorepo
-// @version 1.0.1
+// @version 1.0.3
 // @description 在抖音视频页快速复制当前视频的播放链接（优先 MP4/H264）
 // @author Aryz
 // @match https://www.douyin.com/*
@@ -44,7 +44,10 @@
   }
   const ROOT_ID = "aryz-douyin-copy-root";
   const AWEME_DETAIL_PATH = "/aweme/v1/web/aweme/detail/";
-  const AWEME_FEED_PATH = "/aweme/v1/web/tab/feed/";
+  const AWEME_FEED_PATHS = [
+    "/aweme/v1/web/tab/feed/",
+    "/aweme/v2/web/module/feed/"
+  ];
   const BUTTON_LABEL_READY = "复制当前视频播放链接";
   const BUTTON_LABEL_WAITING = "等待当前视频链接";
   const BUTTON_LABEL_NO_VIDEO = "未识别视频ID";
@@ -85,7 +88,7 @@
     if (url.pathname.startsWith(AWEME_DETAIL_PATH)) {
       return { url, type: "detail" };
     }
-    if (url.pathname.startsWith(AWEME_FEED_PATH)) {
+    if (AWEME_FEED_PATHS.some((path) => url.pathname.startsWith(path))) {
       return { url, type: "feed" };
     }
     return null;

@@ -40,7 +40,10 @@ type TrackedXHR = XMLHttpRequest & {
 
 const ROOT_ID = "aryz-douyin-copy-root";
 const AWEME_DETAIL_PATH = "/aweme/v1/web/aweme/detail/";
-const AWEME_FEED_PATH = "/aweme/v1/web/tab/feed/";
+const AWEME_FEED_PATHS = [
+  "/aweme/v1/web/tab/feed/",
+  "/aweme/v2/web/module/feed/",
+];
 
 const BUTTON_LABEL_READY =
   "\u590d\u5236\u5f53\u524d\u89c6\u9891\u64ad\u653e\u94fe\u63a5";
@@ -95,7 +98,7 @@ function getDouyinApiInfo(
   if (url.pathname.startsWith(AWEME_DETAIL_PATH)) {
     return { url, type: "detail" };
   }
-  if (url.pathname.startsWith(AWEME_FEED_PATH)) {
+  if (AWEME_FEED_PATHS.some((path) => url.pathname.startsWith(path))) {
     return { url, type: "feed" };
   }
   return null;
