@@ -48,14 +48,25 @@
     "/aweme/v1/web/tab/feed/",
     "/aweme/v2/web/module/feed/"
   ];
-  const BUTTON_LABEL_READY = "复制当前视频播放链接";
-  const BUTTON_LABEL_WAITING = "等待当前视频链接";
-  const BUTTON_LABEL_NO_VIDEO = "未识别视频ID";
+  const DIRECT_LINK_PREFIX = "https://vrc.aryz.dpdns.org/douyin/";
+  const MAIN_BUTTON_TEXT_DEFAULT = "复制抖音链接给VRChat使用";
+  const MAIN_BUTTON_SUCCESS = "复制成功";
+  const MAIN_BUTTON_FAILED = "复制失败";
+  const MAIN_BUTTON_IDLE_BG = "#fe2c55";
+  const MENU_LABEL_PLAY_READY = "复制直链";
+  const MENU_LABEL_PLAY_NO_VIDEO = "复制直链（未识别视频ID）";
+  const MENU_LABEL_PLAY_WAITING = "复制直链（等待解析）";
+  const MENU_LABEL_DIRECT_READY = "复制解析链接（推荐）";
+  const MENU_LABEL_DIRECT_WAITING = "复制解析链接（未识别视频ID）";
+  const FLASH_NO_VIDEO_ID = "未识别到当前视频ID";
+  const FLASH_PLAY_WAITING = "播放链接还没准备好";
   const playableUrlByAwemeId = /* @__PURE__ */ new Map();
   let currentAwemeId = null;
   let currentPlayUrl = null;
-  let buttonEl = null;
-  let resetButtonTimer = null;
+  let mainButtonEl = null;
+  let menuEl = null;
+  let hideMenuTimer = null;
+  let resetMainButtonTimer = null;
   let lastObservedHref = "";
   function getTargetWindow() {
     if (typeof unsafeWindow !== "undefined") {
@@ -116,86 +127,184 @@
     }
     return null;
   }
+  function updateMainButtonText(text) {
+    if (!mainButtonEl) return;
+    const chineseChars = text.match(/[\u3400-\u9FBF]/g);
+    const chineseCount = chineseChars ? chineseChars.length : 0;
+    const englishCount = text.length - chineseCount;
+    const width = `${chineseCount * 16 + englishCount * 10 + 16}px`;
+    mainButtonEl.style.width = width;
+    mainButtonEl.textContent = text;
+  }
+  function resetMainButtonState() {
+    if (!mainButtonEl) return;
+    mainButtonEl.style.background = MAIN_BUTTON_IDLE_BG;
+    updateMainButtonText(MAIN_BUTTON_TEXT_DEFAULT);
+  }
+  function flashMainButtonLabel(text, background, ms = 1500) {
+    if (!mainButtonEl) return;
+    if (resetMainButtonTimer) {
+      clearTimeout(resetMainButtonTimer);
+      resetMainButtonTimer = null;
+    }
+    mainButtonEl.style.background = background;
+    updateMainButtonText(text);
+    resetMainButtonTimer = window.setTimeout(() => {
+      resetMainButtonState();
+      resetMainButtonTimer = null;
+    }, ms);
+  }
+  function getCopyOptions() {
+    const playLabel = !currentAwemeId ? MENU_LABEL_PLAY_NO_VIDEO : currentPlayUrl ? MENU_LABEL_PLAY_READY : MENU_LABEL_PLAY_WAITING;
+    return [
+      {
+        label: playLabel,
+        mode: "play",
+        disabled: !currentAwemeId || !currentPlayUrl
+      },
+      {
+        label: currentAwemeId ? MENU_LABEL_DIRECT_READY : MENU_LABEL_DIRECT_WAITING,
+        mode: "direct",
+        disabled: !currentAwemeId
+      }
+    ];
+  }
+  function hideMenu() {
+    if (!menuEl) return;
+    menuEl.style.display = "none";
+  }
+  async function onCopyClick(mode) {
+    hideMenu();
+    let target = "";
+    if (mode === "play") {
+      if (!currentAwemeId) {
+        flashMainButtonLabel(FLASH_NO_VIDEO_ID, "#9ca3af");
+        return;
+      }
+      if (!currentPlayUrl) {
+        flashMainButtonLabel(FLASH_PLAY_WAITING, "#9ca3af");
+        return;
+      }
+      target = currentPlayUrl;
+    } else {
+      if (!currentAwemeId) {
+        flashMainButtonLabel(FLASH_NO_VIDEO_ID, "#9ca3af");
+        return;
+      }
+      target = `${DIRECT_LINK_PREFIX}${currentAwemeId}`;
+    }
+    try {
+      const success = await copyText(target);
+      flashMainButtonLabel(
+        success ? MAIN_BUTTON_SUCCESS : MAIN_BUTTON_FAILED,
+        success ? "#16a34a" : "#dc2626"
+      );
+    } catch {
+      flashMainButtonLabel(MAIN_BUTTON_FAILED, "#dc2626");
+    }
+  }
+  function renderMenuOptions() {
+    if (!menuEl) return;
+    menuEl.innerHTML = "";
+    const options = getCopyOptions();
+    for (const [index, option] of options.entries()) {
+      const item = document.createElement("div");
+      item.textContent = option.label;
+      item.style.padding = "8px 12px";
+      item.style.cursor = option.disabled ? "not-allowed" : "pointer";
+      item.style.color = option.disabled ? "#9ca3af" : "#333";
+      if (index !== options.length - 1) {
+        item.style.borderBottom = "1px solid #eee";
+      }
+      item.addEventListener("mouseover", () => {
+        item.style.background = option.disabled ? "#FFF" : "#f5f5f5";
+      });
+      item.addEventListener("mouseout", () => {
+        item.style.background = "#FFF";
+      });
+      item.addEventListener("click", () => {
+        void onCopyClick(option.mode);
+      });
+      menuEl.appendChild(item);
+    }
+  }
+  function syncCopyUi() {
+    renderMenuOptions();
+    if (!resetMainButtonTimer) {
+      resetMainButtonState();
+    }
+  }
   function updateCurrentVideoState() {
     const nextAwemeId = getCurrentAwemeId();
     if (nextAwemeId === currentAwemeId) return;
     currentAwemeId = nextAwemeId;
     currentPlayUrl = currentAwemeId ? playableUrlByAwemeId.get(currentAwemeId) ?? null : null;
-    renderButtonLabel();
-  }
-  function renderButtonLabel() {
-    if (!buttonEl) return;
-    if (!currentAwemeId) {
-      buttonEl.textContent = BUTTON_LABEL_NO_VIDEO;
-      return;
-    }
-    buttonEl.textContent = currentPlayUrl ? BUTTON_LABEL_READY : BUTTON_LABEL_WAITING;
-  }
-  function flashButtonLabel(text, background, ms = 1500) {
-    if (!buttonEl) return;
-    if (resetButtonTimer) {
-      clearTimeout(resetButtonTimer);
-      resetButtonTimer = null;
-    }
-    buttonEl.textContent = text;
-    buttonEl.style.background = background;
-    resetButtonTimer = window.setTimeout(() => {
-      if (!buttonEl) return;
-      buttonEl.style.background = "#fe2c55";
-      renderButtonLabel();
-      resetButtonTimer = null;
-    }, ms);
-  }
-  async function onCopyClick() {
-    if (!currentAwemeId) {
-      flashButtonLabel(
-        "未识别到当前视频ID",
-        "#9ca3af"
-      );
-      return;
-    }
-    if (!currentPlayUrl) {
-      flashButtonLabel("链接还没准备好", "#9ca3af");
-      return;
-    }
-    try {
-      const success = await copyText(currentPlayUrl);
-      flashButtonLabel(
-        success ? "复制成功" : "复制失败",
-        success ? "#16a34a" : "#dc2626"
-      );
-    } catch {
-      flashButtonLabel("复制失败", "#dc2626");
-    }
+    syncCopyUi();
   }
   function mount() {
     if (document.getElementById(ROOT_ID)) return;
-    const root = document.createElement("div");
-    root.id = ROOT_ID;
-    root.style.position = "fixed";
-    root.style.left = "12px";
-    root.style.bottom = "12px";
-    root.style.zIndex = "999999";
-    root.style.fontFamily = "sans-serif";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.style.border = "none";
-    button.style.borderRadius = "10px";
-    button.style.padding = "10px 14px";
-    button.style.fontSize = "14px";
-    button.style.fontWeight = "600";
-    button.style.color = "#fff";
-    button.style.background = "#fe2c55";
-    button.style.cursor = "pointer";
-    button.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.25)";
-    button.style.transition = "background .2s ease";
-    button.addEventListener("click", () => {
-      void onCopyClick();
+    const containerDiv = document.createElement("div");
+    containerDiv.id = ROOT_ID;
+    containerDiv.style.position = "fixed";
+    containerDiv.style.left = "12px";
+    containerDiv.style.bottom = "12px";
+    containerDiv.style.zIndex = "999999";
+    containerDiv.style.fontFamily = "sans-serif";
+    containerDiv.style.fontSize = "16px";
+    containerDiv.style.lineHeight = "16px";
+    const mainButton = document.createElement("div");
+    mainButton.style.boxSizing = "border-box";
+    mainButton.style.display = "flex";
+    mainButton.style.justifyContent = "center";
+    mainButton.style.alignItems = "center";
+    mainButton.style.whiteSpace = "nowrap";
+    mainButton.style.overflow = "hidden";
+    mainButton.style.textOverflow = "ellipsis";
+    mainButton.style.background = MAIN_BUTTON_IDLE_BG;
+    mainButton.style.color = "#FFF";
+    mainButton.style.padding = "8px 10px";
+    mainButton.style.borderRadius = "10px";
+    mainButton.style.cursor = "pointer";
+    mainButton.style.transition = "all 0.2s ease";
+    mainButton.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.25)";
+    const dropdown = document.createElement("div");
+    dropdown.style.position = "absolute";
+    dropdown.style.bottom = "100%";
+    dropdown.style.left = "0";
+    dropdown.style.marginBottom = "4px";
+    dropdown.style.background = "#FFF";
+    dropdown.style.border = "1px solid #ccc";
+    dropdown.style.borderRadius = "6px";
+    dropdown.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+    dropdown.style.display = "none";
+    dropdown.style.flexDirection = "column";
+    dropdown.style.minWidth = "220px";
+    dropdown.style.fontSize = "14px";
+    dropdown.style.color = "#333";
+    dropdown.style.overflow = "hidden";
+    containerDiv.append(mainButton, dropdown);
+    document.body.appendChild(containerDiv);
+    mainButtonEl = mainButton;
+    menuEl = dropdown;
+    syncCopyUi();
+    mainButton.addEventListener("click", () => {
+      if (!menuEl) return;
+      menuEl.style.display = menuEl.style.display === "flex" ? "none" : "flex";
     });
-    root.appendChild(button);
-    document.body.appendChild(root);
-    buttonEl = button;
-    renderButtonLabel();
+    containerDiv.addEventListener("mouseenter", () => {
+      if (hideMenuTimer) {
+        clearTimeout(hideMenuTimer);
+        hideMenuTimer = null;
+      }
+      if (!menuEl) return;
+      menuEl.style.display = "flex";
+    });
+    containerDiv.addEventListener("mouseleave", () => {
+      hideMenuTimer = window.setTimeout(() => {
+        hideMenu();
+        hideMenuTimer = null;
+      }, 300);
+    });
   }
   function mountWhenReady() {
     if (document.body) {
@@ -211,7 +320,7 @@
     playableUrlByAwemeId.set(awemeId, playUrl);
     if (awemeId === currentAwemeId) {
       currentPlayUrl = playUrl;
-      renderButtonLabel();
+      syncCopyUi();
     }
   }
   function cachePlayableUrl(requestUrl, payload) {
@@ -327,7 +436,7 @@
         const cached = playableUrlByAwemeId.get(currentAwemeId) ?? null;
         if (cached !== currentPlayUrl) {
           currentPlayUrl = cached;
-          renderButtonLabel();
+          syncCopyUi();
         }
       }
     }, 500);

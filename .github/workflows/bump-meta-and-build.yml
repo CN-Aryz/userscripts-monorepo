@@ -1,0 +1,55 @@
+name: Bump Meta And Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump-build:
+    if: github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Bump meta versions
+        run: pnpm bump:meta
+
+      - name: Build userscripts
+        run: |
+          pnpm build:bili
+          pnpm build:douyin
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- scripts/*/src/meta.ts scripts/*/dist/*.user.js; then
+            echo "No version/build changes to commit."
+            exit 0
+          fi
+
+          git add scripts/*/src/meta.ts scripts/*/dist/*.user.js
+          git commit -m "chore(ci): bump meta version and build [skip ci]"
+          git push

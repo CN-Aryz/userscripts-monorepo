@@ -9,7 +9,7 @@ const prefixes: PrefixOption[] = [
   { label: "直接复制当前连接", isDirectLink: true, prefix: "" },
   { label: "纯K", prefix: "http://ckapi.sevenbrothers.cn/bili/api?id=" },
   { label: "api xin", prefix: "http://api.xin.moe/" },
-  { label: "Aryz", prefix: "https://vrc.aryz.dpdns.org/" },
+  { label: "Aryz", prefix: "https://vrc.aryz.dpdns.org/bilibili/" },
 ];
 
 function getQueryString(name: string): string | null {

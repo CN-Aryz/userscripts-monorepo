@@ -8,6 +8,7 @@
     "build": "turbo run build",
     "build:bili": "turbo run build --filter=@us/bili-quickcopy",
     "build:douyin": "turbo run build --filter=@us/douyin-quickcopy",
+    "bump:meta": "node .github/scripts/bump-meta-version.mjs",
     "dev:bili": "turbo run dev --filter=@us/bili-quickcopy",
     "dev:douyin": "turbo run dev --filter=@us/douyin-quickcopy",
     "typecheck": "turbo run typecheck",
