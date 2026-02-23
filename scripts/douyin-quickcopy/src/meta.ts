@@ -12,7 +12,7 @@ export const meta: UserscriptMeta = {
   author: "Aryz",
   homepageURL: repo,
   supportURL: `${repo}/issues`,
-  match: ["https://www.douyin.com/video/*"],
+  match: ["https://www.douyin.com/*"],
   icon: "https://www.douyin.com/favicon.ico",
   license: "MIT",
   runAt: "document-start",

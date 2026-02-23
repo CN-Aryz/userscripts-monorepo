@@ -4,7 +4,7 @@
 // @version 1.0.1
 // @description 在抖音视频页快速复制当前视频的播放链接（优先 MP4/H264）
 // @author Aryz
-// @match https://www.douyin.com/video/*
+// @match https://www.douyin.com/*
 // @icon https://www.douyin.com/favicon.ico
 // @license MIT
 // @run-at document-start
@@ -44,6 +44,7 @@
   }
   const ROOT_ID = "aryz-douyin-copy-root";
   const AWEME_DETAIL_PATH = "/aweme/v1/web/aweme/detail/";
+  const AWEME_FEED_PATH = "/aweme/v1/web/tab/feed/";
   const BUTTON_LABEL_READY = "复制当前视频播放链接";
   const BUTTON_LABEL_WAITING = "等待当前视频链接";
   const BUTTON_LABEL_NO_VIDEO = "未识别视频ID";
@@ -60,13 +61,20 @@
     return window;
   }
   function getCurrentAwemeId() {
-    const pathMatch = location.pathname.match(/\/video\/(\d+)/);
-    if (pathMatch?.[1]) return pathMatch[1];
     const modalId = new URLSearchParams(location.search).get("modal_id");
     if (modalId && /^\d+$/.test(modalId)) return modalId;
+    const pathMatch = location.pathname.match(/\/video\/(\d+)/);
+    if (pathMatch?.[1]) return pathMatch[1];
+    const feedActiveVideo = document.querySelector(
+      '[data-e2e="feed-active-video"]'
+    );
+    if (feedActiveVideo) {
+      const vid = feedActiveVideo.getAttribute("data-e2e-vid");
+      if (vid && /^\d+$/.test(vid)) return vid;
+    }
     return null;
   }
-  function isDouyinDetailApi(rawUrl) {
+  function getDouyinApiInfo(rawUrl) {
     let url;
     try {
       url = new URL(rawUrl, location.href);
@@ -74,8 +82,13 @@
       return null;
     }
     if (!/(\.|^)douyin\.com$/i.test(url.hostname)) return null;
-    if (!url.pathname.startsWith(AWEME_DETAIL_PATH)) return null;
-    return url;
+    if (url.pathname.startsWith(AWEME_DETAIL_PATH)) {
+      return { url, type: "detail" };
+    }
+    if (url.pathname.startsWith(AWEME_FEED_PATH)) {
+      return { url, type: "feed" };
+    }
+    return null;
   }
   function pickPreferredUrl(urlList) {
     if (!Array.isArray(urlList)) return null;
@@ -87,7 +100,9 @@
     if (!video) return null;
     const urlLists = [];
     urlLists.push(video.play_addr_h264?.url_list);
-    const mp4H264Rates = (video.bit_rate ?? []).filter((item) => item.format === "mp4" && item.is_h265 !== 1 && item.is_bytevc1 !== 1).sort((a, b) => (b.bit_rate ?? 0) - (a.bit_rate ?? 0));
+    const mp4H264Rates = (video.bit_rate ?? []).filter(
+      (item) => item.format === "mp4" && item.is_h265 !== 1 && item.is_bytevc1 !== 1
+    ).sort((a, b) => (b.bit_rate ?? 0) - (a.bit_rate ?? 0));
     for (const rate of mp4H264Rates) {
       urlLists.push(rate.play_addr?.url_list);
     }
@@ -130,7 +145,10 @@
   }
   async function onCopyClick() {
     if (!currentAwemeId) {
-      flashButtonLabel("未识别到当前视频ID", "#9ca3af");
+      flashButtonLabel(
+        "未识别到当前视频ID",
+        "#9ca3af"
+      );
       return;
     }
     if (!currentPlayUrl) {
@@ -139,7 +157,10 @@
     }
     try {
       const success = await copyText(currentPlayUrl);
-      flashButtonLabel(success ? "复制成功" : "复制失败", success ? "#16a34a" : "#dc2626");
+      flashButtonLabel(
+        success ? "复制成功" : "复制失败",
+        success ? "#16a34a" : "#dc2626"
+      );
     } catch {
       flashButtonLabel("复制失败", "#dc2626");
     }
@@ -180,18 +201,30 @@
     }
     window.addEventListener("DOMContentLoaded", mount, { once: true });
   }
-  function cachePlayableUrl(requestUrl, payload) {
-    const apiUrl = isDouyinDetailApi(requestUrl);
-    if (!apiUrl) return;
-    const response = payload;
-    const awemeId = apiUrl.searchParams.get("aweme_id") || response.aweme_detail?.aweme_id;
+  function cacheAwemeVideo(awemeId, video) {
     if (!awemeId) return;
-    const playUrl = getMostCompatiblePlayUrl(response.aweme_detail?.video);
+    const playUrl = getMostCompatiblePlayUrl(video ?? void 0);
     if (!playUrl) return;
     playableUrlByAwemeId.set(awemeId, playUrl);
     if (awemeId === currentAwemeId) {
       currentPlayUrl = playUrl;
       renderButtonLabel();
+    }
+  }
+  function cachePlayableUrl(requestUrl, payload) {
+    const apiInfo = getDouyinApiInfo(requestUrl);
+    if (!apiInfo) return;
+    if (apiInfo.type === "detail") {
+      const response = payload;
+      const awemeId = apiInfo.url.searchParams.get("aweme_id") || response.aweme_detail?.aweme_id;
+      cacheAwemeVideo(awemeId, response.aweme_detail?.video);
+      return;
+    }
+    const feedResponse = payload;
+    const awemeList = feedResponse.aweme_list;
+    if (!Array.isArray(awemeList)) return;
+    for (const aweme of awemeList) {
+      cacheAwemeVideo(aweme.aweme_id, aweme.video);
     }
   }
   function installFetchInterceptor() {
@@ -208,7 +241,7 @@
         const maybeUrl = requestInfo.url;
         if (typeof maybeUrl === "string") requestUrl = maybeUrl;
       }
-      if (requestUrl && isDouyinDetailApi(requestUrl)) {
+      if (requestUrl && getDouyinApiInfo(requestUrl)) {
         response.clone().json().then((payload) => {
           cachePlayableUrl(requestUrl, payload);
         }).catch(() => {
@@ -229,7 +262,7 @@
     };
     XHR.prototype.send = function(...args) {
       const requestUrl = this.__douyinRequestUrl ?? "";
-      if (!isDouyinDetailApi(requestUrl)) {
+      if (!getDouyinApiInfo(requestUrl)) {
         return send.apply(this, args);
       }
       let handled = false;

@@ -25,14 +25,25 @@ type AwemeDetailResponse = {
   };
 };
 
+type AwemeFeedResponse = {
+  aweme_list?: Array<{
+    aweme_id?: string;
+    video?: DouyinVideo | null;
+  }>;
+};
+
+type DouyinApiType = "detail" | "feed";
+
 type TrackedXHR = XMLHttpRequest & {
   __douyinRequestUrl?: string;
 };
 
 const ROOT_ID = "aryz-douyin-copy-root";
 const AWEME_DETAIL_PATH = "/aweme/v1/web/aweme/detail/";
+const AWEME_FEED_PATH = "/aweme/v1/web/tab/feed/";
 
-const BUTTON_LABEL_READY = "\u590d\u5236\u5f53\u524d\u89c6\u9891\u64ad\u653e\u94fe\u63a5";
+const BUTTON_LABEL_READY =
+  "\u590d\u5236\u5f53\u524d\u89c6\u9891\u64ad\u653e\u94fe\u63a5";
 const BUTTON_LABEL_WAITING = "\u7b49\u5f85\u5f53\u524d\u89c6\u9891\u94fe\u63a5";
 const BUTTON_LABEL_NO_VIDEO = "\u672a\u8bc6\u522b\u89c6\u9891ID";
 
@@ -53,16 +64,26 @@ function getTargetWindow(): Window & typeof globalThis {
 }
 
 function getCurrentAwemeId(): string | null {
+  const modalId = new URLSearchParams(location.search).get("modal_id");
+  if (modalId && /^\d+$/.test(modalId)) return modalId;
+
   const pathMatch = location.pathname.match(/\/video\/(\d+)/);
   if (pathMatch?.[1]) return pathMatch[1];
 
-  const modalId = new URLSearchParams(location.search).get("modal_id");
-  if (modalId && /^\d+$/.test(modalId)) return modalId;
+  const feedActiveVideo = document.querySelector<HTMLElement>(
+    '[data-e2e="feed-active-video"]',
+  );
+  if (feedActiveVideo) {
+    const vid = feedActiveVideo.getAttribute("data-e2e-vid");
+    if (vid && /^\d+$/.test(vid)) return vid;
+  }
 
   return null;
 }
 
-function isDouyinDetailApi(rawUrl: string): URL | null {
+function getDouyinApiInfo(
+  rawUrl: string,
+): { url: URL; type: DouyinApiType } | null {
   let url: URL;
   try {
     url = new URL(rawUrl, location.href);
@@ -71,8 +92,13 @@ function isDouyinDetailApi(rawUrl: string): URL | null {
   }
 
   if (!/(\.|^)douyin\.com$/i.test(url.hostname)) return null;
-  if (!url.pathname.startsWith(AWEME_DETAIL_PATH)) return null;
-  return url;
+  if (url.pathname.startsWith(AWEME_DETAIL_PATH)) {
+    return { url, type: "detail" };
+  }
+  if (url.pathname.startsWith(AWEME_FEED_PATH)) {
+    return { url, type: "feed" };
+  }
+  return null;
 }
 
 function pickPreferredUrl(urlList: string[] | undefined): string | null {
@@ -84,7 +110,9 @@ function pickPreferredUrl(urlList: string[] | undefined): string | null {
   return cleaned.find((url) => url.includes("/aweme/v1/play/?")) ?? cleaned[0];
 }
 
-function getMostCompatiblePlayUrl(video: DouyinVideo | undefined): string | null {
+function getMostCompatiblePlayUrl(
+  video: DouyinVideo | undefined,
+): string | null {
   if (!video) return null;
 
   const urlLists: Array<string[] | undefined> = [];
@@ -92,7 +120,10 @@ function getMostCompatiblePlayUrl(video: DouyinVideo | undefined): string | null
   urlLists.push(video.play_addr_h264?.url_list);
 
   const mp4H264Rates = (video.bit_rate ?? [])
-    .filter((item) => item.format === "mp4" && item.is_h265 !== 1 && item.is_bytevc1 !== 1)
+    .filter(
+      (item) =>
+        item.format === "mp4" && item.is_h265 !== 1 && item.is_bytevc1 !== 1,
+    )
     .sort((a, b) => (b.bit_rate ?? 0) - (a.bit_rate ?? 0));
 
   for (const rate of mp4H264Rates) {
@@ -114,7 +145,9 @@ function updateCurrentVideoState() {
   if (nextAwemeId === currentAwemeId) return;
 
   currentAwemeId = nextAwemeId;
-  currentPlayUrl = currentAwemeId ? playableUrlByAwemeId.get(currentAwemeId) ?? null : null;
+  currentPlayUrl = currentAwemeId
+    ? (playableUrlByAwemeId.get(currentAwemeId) ?? null)
+    : null;
   renderButtonLabel();
 }
 
@@ -126,7 +159,9 @@ function renderButtonLabel() {
     return;
   }
 
-  buttonEl.textContent = currentPlayUrl ? BUTTON_LABEL_READY : BUTTON_LABEL_WAITING;
+  buttonEl.textContent = currentPlayUrl
+    ? BUTTON_LABEL_READY
+    : BUTTON_LABEL_WAITING;
 }
 
 function flashButtonLabel(text: string, background: string, ms = 1500) {
@@ -150,7 +185,10 @@ function flashButtonLabel(text: string, background: string, ms = 1500) {
 
 async function onCopyClick() {
   if (!currentAwemeId) {
-    flashButtonLabel("\u672a\u8bc6\u522b\u5230\u5f53\u524d\u89c6\u9891ID", "#9ca3af");
+    flashButtonLabel(
+      "\u672a\u8bc6\u522b\u5230\u5f53\u524d\u89c6\u9891ID",
+      "#9ca3af",
+    );
     return;
   }
 
@@ -161,7 +199,10 @@ async function onCopyClick() {
 
   try {
     const success = await copyText(currentPlayUrl);
-    flashButtonLabel(success ? "\u590d\u5236\u6210\u529f" : "\u590d\u5236\u5931\u8d25", success ? "#16a34a" : "#dc2626");
+    flashButtonLabel(
+      success ? "\u590d\u5236\u6210\u529f" : "\u590d\u5236\u5931\u8d25",
+      success ? "#16a34a" : "#dc2626",
+    );
   } catch {
     flashButtonLabel("\u590d\u5236\u5931\u8d25", "#dc2626");
   }
@@ -210,15 +251,13 @@ function mountWhenReady() {
   window.addEventListener("DOMContentLoaded", mount, { once: true });
 }
 
-function cachePlayableUrl(requestUrl: string, payload: unknown) {
-  const apiUrl = isDouyinDetailApi(requestUrl);
-  if (!apiUrl) return;
-
-  const response = payload as AwemeDetailResponse;
-  const awemeId = apiUrl.searchParams.get("aweme_id") || response.aweme_detail?.aweme_id;
+function cacheAwemeVideo(
+  awemeId: string | undefined,
+  video: DouyinVideo | null | undefined,
+) {
   if (!awemeId) return;
 
-  const playUrl = getMostCompatiblePlayUrl(response.aweme_detail?.video);
+  const playUrl = getMostCompatiblePlayUrl(video ?? undefined);
   if (!playUrl) return;
 
   playableUrlByAwemeId.set(awemeId, playUrl);
@@ -226,6 +265,28 @@ function cachePlayableUrl(requestUrl: string, payload: unknown) {
   if (awemeId === currentAwemeId) {
     currentPlayUrl = playUrl;
     renderButtonLabel();
+  }
+}
+
+function cachePlayableUrl(requestUrl: string, payload: unknown) {
+  const apiInfo = getDouyinApiInfo(requestUrl);
+  if (!apiInfo) return;
+
+  if (apiInfo.type === "detail") {
+    const response = payload as AwemeDetailResponse;
+    const awemeId =
+      apiInfo.url.searchParams.get("aweme_id") ||
+      response.aweme_detail?.aweme_id;
+    cacheAwemeVideo(awemeId, response.aweme_detail?.video);
+    return;
+  }
+
+  const feedResponse = payload as AwemeFeedResponse;
+  const awemeList = feedResponse.aweme_list;
+  if (!Array.isArray(awemeList)) return;
+
+  for (const aweme of awemeList) {
+    cacheAwemeVideo(aweme.aweme_id, aweme.video);
   }
 }
 
@@ -241,12 +302,16 @@ function installFetchInterceptor() {
     const requestInfo = args[0];
     if (typeof requestInfo === "string") {
       requestUrl = requestInfo;
-    } else if (requestInfo && typeof requestInfo === "object" && "url" in requestInfo) {
+    } else if (
+      requestInfo &&
+      typeof requestInfo === "object" &&
+      "url" in requestInfo
+    ) {
       const maybeUrl = (requestInfo as { url?: unknown }).url;
       if (typeof maybeUrl === "string") requestUrl = maybeUrl;
     }
 
-    if (requestUrl && isDouyinDetailApi(requestUrl)) {
+    if (requestUrl && getDouyinApiInfo(requestUrl)) {
       response
         .clone()
         .json()
@@ -270,13 +335,17 @@ function installXhrInterceptor() {
   XHR.prototype.open = function (this: TrackedXHR, ...args: unknown[]) {
     const urlArg = args[1];
     this.__douyinRequestUrl =
-      typeof urlArg === "string" ? urlArg : urlArg != null ? String(urlArg) : "";
+      typeof urlArg === "string"
+        ? urlArg
+        : urlArg != null
+          ? String(urlArg)
+          : "";
     return open.apply(this, args as Parameters<XMLHttpRequest["open"]>);
   };
 
   XHR.prototype.send = function (this: TrackedXHR, ...args: unknown[]) {
     const requestUrl = this.__douyinRequestUrl ?? "";
-    if (!isDouyinDetailApi(requestUrl)) {
+    if (!getDouyinApiInfo(requestUrl)) {
       return send.apply(this, args as Parameters<XMLHttpRequest["send"]>);
     }
 
