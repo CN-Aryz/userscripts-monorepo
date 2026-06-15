@@ -46,6 +46,7 @@
     { label: "直接复制当前连接", isDirectLink: true, prefix: "" },
     { label: "纯K", prefix: "http://ckapi.sevenbrothers.cn/bili/api?id=" },
     { label: "api xin", prefix: "http://api.xin.moe/" },
+    { label: "夜", prefix: "https://biliplayer.91vrchat.com/player/?url=" },
     { label: "Aryz", prefix: "https://vrc.aryz.dpdns.org/bilibili/" }
   ];
   function getQueryString(name) {
@@ -134,7 +135,9 @@
           item.style.background = "#FFF";
         });
         item.addEventListener("click", () => {
-          const link = option.isDirectLink ? `${window.location.origin}${window.location.pathname}` : `${option.prefix}${getUrlParameter()}`;
+          const currentUrl = `${window.location.origin}${window.location.pathname}`;
+          const bv = getUrlParameter();
+          const link = option.isDirectLink ? currentUrl : option.prefix.includes("{url}") || option.prefix.includes("{BV}") ? option.prefix.replace(/\{url\}/g, currentUrl).replace(/\{BV\}/g, bv) : `${option.prefix}${bv}`;
           copyText(link).then(() => {
             updateMainButtonText(mainButton, "复制成功");
           }).catch(() => {
