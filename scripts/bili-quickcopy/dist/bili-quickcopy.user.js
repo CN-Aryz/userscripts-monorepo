@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name B站VRChat链接复制（下拉选项版）
 // @namespace https://github.com/CN-Aryz/userscripts-monorepo
-// @version 1.0.2
+// @version 1.0.3
 // @description B站VRChat链接复制（下拉选项版）
 // @author Aryz
 // @match https://www.bilibili.com/video/BV*
@@ -46,7 +46,7 @@
     { label: "直接复制当前连接", isDirectLink: true, prefix: "" },
     { label: "纯K", prefix: "http://ckapi.sevenbrothers.cn/bili/api?id=" },
     { label: "api xin", prefix: "http://api.xin.moe/" },
-    { label: "夜", prefix: "https://biliplayer.91vrchat.com/player/?url=" },
+    { label: "夜", prefix: "https://biliplayer.91vrchat.com/player/?url={url}" },
     { label: "Aryz", prefix: "https://vrc.aryz.dpdns.org/bilibili/" }
   ];
   function getQueryString(name) {
