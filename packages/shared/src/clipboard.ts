@@ -1,9 +1,10 @@
+import { GM_setClipboard } from "vite-plugin-monkey/dist/client";
+
 export async function copyText(text: string): Promise<boolean> {
-  // Tampermonkey / Violentmonkey
-  if (typeof GM_setClipboard === "function") {
+  try {
     GM_setClipboard(text, "text");
     return true;
-  }
+  } catch {}
 
   try {
     await navigator.clipboard.writeText(text);

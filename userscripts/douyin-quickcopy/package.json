@@ -1,0 +1,19 @@
+{
+  "name": "@userscripts/douyin-quickcopy",
+  "version": "1.0.5",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "catalog:",
+    "vite-plugin-monkey": "catalog:",
+    "typescript": "catalog:"
+  }
+}

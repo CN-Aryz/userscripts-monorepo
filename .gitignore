@@ -1,11 +1,5 @@
-node_modules/
-.turbo/
-
-# Build outputs
-dist/
-**/dist/
-!scripts/*/dist/
-!scripts/*/dist/**
-
-# TypeScript incremental
-*.tsbuildinfo
+node_modules
+.turbo
+*.log
+.DS_Store
+# dist is intentionally COMMITTED (it is the deploy artifact Tampermonkey fetches)

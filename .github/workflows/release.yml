@@ -1,0 +1,67 @@
+name: Release
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write       # push the dist commit
+  pull-requests: write  # open the "Version Packages" PR
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # If changesets are pending -> opens/updates a "Version Packages" PR
+      # (hasChangesets = true). When that PR is merged the next run has NO
+      # pending changesets (hasChangesets = false) -> we build & ship.
+      - name: Version
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          commit: "chore: version packages [skip ci]"
+          title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache turbo build outputs
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-release-${{ github.sha }}
+          restore-keys: turbo-release-
+
+      # Plain `build` (NOT --affected): turbo's cache restores unchanged
+      # packages instantly; only packages whose inputs changed (e.g. a bumped
+      # version in package.json) actually rebuild.
+      - name: Build
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: pnpm turbo run build
+
+      - name: Commit dist
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add userscripts/*/dist
+          if git diff --staged --quiet; then
+            echo "No dist changes to commit."
+          else
+            git commit -m "chore: build userscripts [skip ci]"
+            git push
+          fi

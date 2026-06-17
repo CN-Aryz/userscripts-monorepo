@@ -1,27 +1,21 @@
 {
   "name": "userscripts-monorepo",
+  "version": "0.0.0",
   "private": true,
-  "version": "1.0.0",
-  "description": "Userscripts monorepo",
-  "packageManager": "pnpm@10.30.1",
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "build:bili": "turbo run build --filter=@us/bili-quickcopy",
-    "build:douyin": "turbo run build --filter=@us/douyin-quickcopy",
-    "bump:meta": "node .github/scripts/bump-meta-version.mjs",
-    "dev:bili": "turbo run dev --filter=@us/bili-quickcopy",
-    "dev:douyin": "turbo run dev --filter=@us/douyin-quickcopy",
+    "build:affected": "turbo run build --affected",
+    "dev": "turbo run dev",
     "typecheck": "turbo run typecheck",
-    "typecheck:bili": "turbo run typecheck --filter=@us/bili-quickcopy",
-    "typecheck:douyin": "turbo run typecheck --filter=@us/douyin-quickcopy",
-    "clean": "turbo run clean && rimraf .turbo dist"
+    "lint": "turbo run lint",
+    "changeset": "changeset",
+    "version": "changeset version"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
-    "@types/tampermonkey": "^5.0.5",
-    "rimraf": "^6.1.3",
-    "turbo": "^2.8.10",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
-  }
+    "@changesets/cli": "^2.27.11",
+    "turbo": "^2.5.0",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@11.7.0+sha512.19cc852c120c7125760f2443ee6be0ca5b40f9f50598de1a09a1f177503e010e57c23c77646e01e761de59bf874fb22a3398c33ab9691fc13eb946b6f0f4d620"
 }

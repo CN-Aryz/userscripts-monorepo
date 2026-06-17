@@ -1,40 +1,26 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "globalDependencies": [".npmrc", "tsconfig.base.json", "eslint.config.*"],
+  "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "src/**",
-        "vite.config.ts",
-        "tsconfig*.json"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
-    },
-    "dev": {
-      "dependsOn": [
-        "^build"
-      ],
-      "cache": false,
-      "persistent": true
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!dist/**"],
+      "env": ["VITE_*"],
+      "outputs": ["dist/**"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "src/**",
-        "tsconfig*.json"
-      ],
-      "outputs": []
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!dist/**"]
     },
-    "clean": {
-      "cache": false
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "!dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
     }
   }
 }

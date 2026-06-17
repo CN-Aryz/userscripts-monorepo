@@ -1,24 +1,28 @@
 {
-  "name": "@us/shared",
-  "private": true,
+  "name": "@repo/shared",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "sideEffects": false,
-  "files": [
-    "dist"
-  ],
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf dist *.tsbuildinfo"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
     }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "vite-plugin-monkey": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "catalog:"
   }
 }
